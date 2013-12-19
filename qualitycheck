@@ -1,4 +1,5 @@
 #!/usr/bin/env ruby
+require 'pp'
 TITLE_REGEX = /(.+) - (.+) - (.+) \[(.+)\]\[(.+)\]\[(.+)\]\[(.+)\]\((.+)\)\.(.+)/
 def parse_title(title)
 	match = TITLE_REGEX.match(title)
@@ -47,6 +48,7 @@ def episodic_sort(ep1, ep2)
 	return comp
 end
 
+duplicates = ARGV.delete("--duplicates")
 
 info = ARGV.map do |file|
 	parse_title(File.basename(file))
@@ -55,6 +57,9 @@ end
 info.group_by {|x| x[:show] + " - " + x[:subgroup]}.each_pair do |show, episodes|
 	puts show
 	eppad = max_string(episodes.map{ |x| x[:epno] })
+	if duplicates
+		episodes = episodes.group_by { |e| e[:epno] }.select { |k,v| v.size > 1 }.values.flatten
+	end
 	episodes.sort {|a,b| episodic_sort(a[:epno], b[:epno]) }.each do |episode|
 		puts "  #{episode[:epno].ljust(eppad)} - #{episode[:source]}(#{episode[:resolution]})"
 	end
