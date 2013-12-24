@@ -41,7 +41,7 @@ def episodic_sort(ep1, ep2)
 
 	comp = (ep1base.to_i <=> ep2base.to_i)
 
-	if comp.zero? and not (ep1version.nil? or ep2version.nil?)
+	if comp.zero? and (not ep1version.nil? or not ep2version.nil?)
 		comp = (ep1version.to_i <=> ep2version.to_i)
 	end
 
@@ -58,10 +58,10 @@ info.group_by {|x| x[:show] + " - " + x[:subgroup]}.each_pair do |show, episodes
 	puts show
 	eppad = max_string(episodes.map{ |x| x[:epno] })
 	if duplicates
-		episodes = episodes.group_by { |e| e[:epno] }.select { |k,v| v.size > 1 }.values.flatten
+		episodes = episodes.group_by { |e| e[:epno].split("v")[0] }.select { |k,v| v.size > 1 }.values.flatten
 	end
 	episodes.sort {|a,b| episodic_sort(a[:epno], b[:epno]) }.each do |episode|
-		puts "  #{episode[:epno].ljust(eppad)} - #{episode[:source]}(#{episode[:resolution]})"
+		puts "  #{episode[:epno].ljust(eppad)} - #{episode[:source]}(#{episode[:resolution]})(#{episode[:crc32]})"
 	end
 end
 
