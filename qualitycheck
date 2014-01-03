@@ -52,7 +52,7 @@ duplicates = ARGV.delete("--duplicates")
 
 info = ARGV.map do |file|
 	parse_title(File.basename(file))
-end
+end.reject {|i| i.nil?}
 
 info.group_by {|x| x[:show] + " - " + x[:subgroup]}.each_pair do |show, episodes|
 	puts show
