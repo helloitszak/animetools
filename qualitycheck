@@ -1,6 +1,30 @@
 #!/usr/bin/env ruby
 require 'pp'
-TITLE_REGEX = /(.+) - (.+) - (.+) \[(.+)\]\[(.+)\]\[(.+)\]\[(.+)\]\((.+)\)\.(.+)/
+require 'optparse'
+TITLE_REGEX = /(.+) - ([SCTPO]?[0-9v]+) - (.+) \[(.+)\]\[(.+)\]\[(.+)\]\[(.+)\]\((.+)\)\.(.+)/
+
+def parse_options!(args)
+	options = {
+		:duplicates => false
+	}
+
+	OptionParser.new do |opts|
+		opts.banner = "Usage: #{$0} [options] files"
+		opts.on("-d", "--duplicates", "Only print duplicates") do |d|
+			options[:duplicates] = d
+		end
+
+		opts.on_tail("-h", "--help", "Show this message") do
+			puts opts
+			exit
+		end
+	end.parse!(args)
+
+
+	options
+end
+
+
 def parse_title(title)
 	match = TITLE_REGEX.match(title)
 	if match
@@ -48,16 +72,18 @@ def episodic_sort(ep1, ep2)
 	return comp
 end
 
-duplicates = ARGV.delete("--duplicates")
+options = parse_options!(ARGV)
 
 info = ARGV.map do |file|
 	parse_title(File.basename(file))
 end.reject {|i| i.nil?}
 
+
+
 info.group_by {|x| x[:show] + " - " + x[:subgroup]}.each_pair do |show, episodes|
 	puts show
 	eppad = max_string(episodes.map{ |x| x[:epno] })
-	if duplicates
+	if options[:duplicates]
 		episodes = episodes.group_by { |e| e[:epno].split("v")[0] }.select { |k,v| v.size > 1 }.values.flatten
 	end
 	episodes.sort {|a,b| episodic_sort(a[:epno], b[:epno]) }.each do |episode|
