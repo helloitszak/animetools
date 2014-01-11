@@ -4,9 +4,10 @@ list = YAML.load_file(File.expand_path("~/.flexget/config.yml"))
 series = list["presets"]["anime"]["series"]
 max_group_length = series.map { |x| x.values[0]["from_group"] }.group_by(&:size).max.last[0].length
 max_anime_length = series.map { |x| x.keys[0] }.group_by(&:size).max.last[0].length
+max_anime_length = [max_anime_length, 30].min
 series.each do |serie|
 	name, metadata = serie.first
-	name = name.gsub(/_/, " ")
+	name = name.gsub(/_/, " ")[0,30]
 	subgroup = "[#{metadata["from_group"]}]".rjust(max_group_length+2)
 	puts "#{subgroup} #{name}"
 end
