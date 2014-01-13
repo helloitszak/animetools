@@ -1,17 +1,22 @@
 #!/usr/bin/env ruby
 require 'yaml'
+
 list = YAML.load_file(File.expand_path("~/.flexget/config.yml"))
-series = list["presets"]["anime"]["series"]
+series = list["templates"]["anime"]["series"]
+
 max_group_length = series.map { |x| x.values[0]["from_group"] }.group_by(&:size).max.last[0].length
 max_anime_length = series.map { |x| x.keys[0] }.group_by(&:size).max.last[0].length
 max_anime_length = [max_anime_length, 30].min
+
+maxwide = (max_anime_length + max_group_length + 3)
+puts " Airing Anime List ".center(maxwide, "=")
 series.each do |serie|
 	name, metadata = serie.first
 	name = name.gsub(/_/, " ")[0,30]
 	subgroup = "[#{metadata["from_group"]}]".rjust(max_group_length+2)
 	puts "#{subgroup} #{name}"
 end
+
 pad = " " * (max_group_length + 2)
 puts "#{pad} " + ("-" * max_anime_length)
 puts "#{pad} Total: #{series.length}"
-
