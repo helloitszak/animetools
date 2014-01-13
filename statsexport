@@ -1,0 +1,45 @@
+#!/usr/bin/env ruby
+require 'csv'
+TITLE_REGEX = /(.+) - (.+) - (.+) \[(.+)\]\[(.+)\]\[(.+)\]\[(.+)\]\((.*)\)\.(.+)/
+def parse_title(title)
+	match = TITLE_REGEX.match(title)
+	if match
+		{
+			:show => match[1],
+			:epno => match[2],
+			:title => match[3],
+			:subgroup => match[4],
+			:source => match[5],
+			:resolution => match[6],
+			:codec => match[7],
+			:crc32 => match[8]
+		}
+	end
+end
+
+csv_opts = {
+	:headers => [:show, :epno, :title, :subgroup, :source, :resolution, :codec, :crc32],
+	:write_headers => true
+}
+
+if ARGV[0].nil?
+  $stderr.puts "Usage: #{$0} [animepath]"
+  exit
+end
+
+searchpath = "#{ARGV[0]}/**/*.*"
+$stderr.puts "Search Directory: #{searchpath}"
+$stderr.puts "Invalid Files outputting to Stderr"
+files = Dir.glob(searchpath)
+csvgen = CSV.generate(csv_opts) do |csv|
+	files.each do |file|
+		next if File.directory?(file)
+		begin
+			csv << parse_title(File.basename(file)).values
+		rescue
+			$stderr.puts file
+		end
+	end
+end
+
+puts csvgen
