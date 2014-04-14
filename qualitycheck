@@ -1,93 +1,94 @@
 #!/usr/bin/env ruby
 require 'pp'
 require 'optparse'
-TITLE_REGEX = /(.+) - ([SCTPO]?[0-9v]+) - (.+) \[(.+)\]\[(.+)\]\[(.+)\]\[(.+)\]\((.+)\)\.(.+)/
+TITLE_REGEX = /(.+) - ([A-Z]?[0-9v]*) - (.+) \[(.*)\]\[(.*)\]\[(.*)\]\[(.*)\]\((.*)\)\.(.+)/
 
 def parse_options!(args)
-	options = {
-		:duplicates => false
-	}
+  options = {
+    :duplicates => false
+  }
 
-	OptionParser.new do |opts|
-		opts.banner = "Usage: #{$0} [options] files"
-		opts.on("-d", "--duplicates", "Only print duplicates") do |d|
-			options[:duplicates] = d
-		end
+  OptionParser.new do |opts|
+    opts.banner = "Usage: #{$0} [options] files"
+    opts.on("-d", "--duplicates", "Only print duplicates") do |d|
+      options[:duplicates] = d
+    end
 
-		opts.on_tail("-h", "--help", "Show this message") do
-			puts opts
-			exit
-		end
-	end.parse!(args)
+    opts.on_tail("-h", "--help", "Show this message") do
+      puts opts
+      exit
+    end
+  end.parse!(args)
 
 
-	options
+  options
 end
 
 
 def parse_title(title)
-	match = TITLE_REGEX.match(title)
-	if match
-		{
-			:show => match[1],
-			:epno => match[2],
-			:title => match[3],
-			:subgroup => match[4],
-			:source => match[5],
-			:resolution => match[6],
-			:codec => match[7],
-			:crc32 => match[8]
-		}
-	end
+  match = TITLE_REGEX.match(title)
+  if match
+    {
+      :show => match[1],
+      :epno => match[2],
+      :title => match[3],
+      :subgroup => match[4],
+      :source => match[5],
+      :resolution => match[6],
+      :codec => match[7],
+      :crc32 => match[8],
+      :extension => match[9]
+    }
+  end
 end
 
 def max_string(array)
-	array.group_by(&:length).max.last.last.length
+  array.group_by(&:length).max.last.last.length
 end
 
 def episodic_sort(ep1, ep2)
-	ep1base, ep1version = ep1.split("v")
-	ep2base, ep2version = ep2.split("v")
+  ep1base, ep1version = ep1.split("v")
+  ep2base, ep2version = ep2.split("v")
 
-	ep1special = ((ep1base[0] =~ /([A-Za-z])/).nil? == false ? $1 : nil)
-	ep2special = ((ep2base[0] =~ /([A-Za-z])/).nil? == false ? $1 : nil)
+  ep1special = ((ep1base[0] =~ /([A-Za-z])/).nil? == false ? $1 : nil)
+  ep2special = ((ep2base[0] =~ /([A-Za-z])/).nil? == false ? $1 : nil)
 
-	if ep1special or ep2special
-		if ep1special and ep2special.nil?
-			return 1
-		elsif ep2special and ep1special.nil?
-			return -1
-		else
-			ep1base = ep1base[1, ep1base.length]
-			ep2base = ep2base[1, ep2base.length]
-		end
-	end
+  if ep1special or ep2special
+    if ep1special and ep2special.nil?
+      return 1
+    elsif ep2special and ep1special.nil?
+      return -1
+    else
+      ep1base = ep1base[1, ep1base.length]
+      ep2base = ep2base[1, ep2base.length]
+    end
+  end
 
-	comp = (ep1base.to_i <=> ep2base.to_i)
+  comp = (ep1base.to_i <=> ep2base.to_i)
 
-	if comp.zero? and (not ep1version.nil? or not ep2version.nil?)
-		comp = (ep1version.to_i <=> ep2version.to_i)
-	end
+  if comp.zero? and (not ep1version.nil? or not ep2version.nil?)
+    comp = (ep1version.to_i <=> ep2version.to_i)
+  end
 
-	return comp
+  return comp
 end
 
 options = parse_options!(ARGV)
 
 info = ARGV.map do |file|
-	parse_title(File.basename(file))
+  parse_title(File.basename(file))
 end.reject {|i| i.nil?}
 
 
 
 info.group_by {|x| x[:show] + " - " + x[:subgroup]}.each_pair do |show, episodes|
-	puts show
-	eppad = max_string(episodes.map{ |x| x[:epno] })
-	if options[:duplicates]
-		episodes = episodes.group_by { |e| e[:epno].split("v")[0] }.select { |k,v| v.size > 1 }.values.flatten
-	end
-	episodes.sort {|a,b| episodic_sort(a[:epno], b[:epno]) }.each do |episode|
-		puts "  #{episode[:epno].ljust(eppad)} - #{episode[:source]}(#{episode[:resolution]})(#{episode[:crc32]})"
-	end
+  puts show
+  eppad = max_string(episodes.map{ |x| x[:epno] })
+  if options[:duplicates]
+    episodes = episodes.group_by { |e| e[:epno].split("v")[0] }.select { |k,v| v.size > 1 }.values.flatten
+  end
+  episodes.sort {|a,b| episodic_sort(a[:epno], b[:epno]) }.each do |episode|
+    puts "  #{episode[:epno].ljust(eppad)} - #{episode[:source]}(#{episode[:resolution]})(#{episode[:crc32]})"
+  end
 end
 

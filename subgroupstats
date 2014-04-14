@@ -1,21 +1,22 @@
 #!/usr/bin/env ruby
 require 'yaml'
+require 'aligned_table'
 
 list = YAML.load_file(File.expand_path("~/.flexget/config.yml"))
 series = list["templates"]["anime"]["series"]
 
-max_group_length = series.map { |x| x.values[0]["from_group"] }.group_by(&:size).max.last[0].length
+at = AlignedTable.new
 
 group_list = series.group_by { |x| x.values[0]["from_group"] }.map { |k,v| [k, v.count] }
 group_list = Hash[*group_list.sort { |a,b| b[1] <=> a[1] }.flatten]
 
 puts "Subgroup Stats for Airing Anime:"
-group_list.each do |group, count|
-  subgroup = "[#{group}]".rjust(max_group_length+2)
+rows = group_list.map do |group, count|
+  subgroup = "[#{group}]"
   percent = ((count.to_f / series.length)*100).round(2)
-  puts "#{subgroup} #{count} (#{percent}%)"
+  [subgroup, count, "(#{percent}%)"]
 end
+rows.push(["Total:", series.length])
+at.rows = rows
+puts at.render
 
-
-total = "Total:".rjust(max_group_length + 2)
-puts "#{total} #{series.length}"
